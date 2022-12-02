@@ -212,11 +212,13 @@ public:
     friend class ModeFollow;
     friend class ModeGuided;
     friend class ModeLand;
+    friend class ModeSbsbs;
     friend class ModeLoiter;
     friend class ModePosHold;
     friend class ModeRTL;
     friend class ModeSmartRTL;
     friend class ModeSport;
+    friend class ModeMyfirst;
     friend class ModeStabilize;
     friend class ModeStabilize_Heli;
     friend class ModeSystemId;
@@ -971,6 +973,7 @@ private:
 #endif
     ModeLand mode_land;
 #if MODE_LOITER_ENABLED == ENABLED
+    ModeSbsbs mode_sbsbs;
     ModeLoiter mode_loiter;
 #endif
 #if MODE_POSHOLD_ENABLED == ENABLED
@@ -982,6 +985,7 @@ private:
 #if FRAME_CONFIG == HELI_FRAME
     ModeStabilize_Heli mode_stabilize;
 #else
+    ModeMyfirst mode_myfirst;
     ModeStabilize mode_stabilize;
 #endif
 #if MODE_SPORT_ENABLED == ENABLED

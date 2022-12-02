@@ -39,6 +39,8 @@ public:
         AUTOROTATE =   26,  // Autonomous autorotation
         AUTO_RTL =     27,  // Auto RTL, this is not a true mode, AUTO will report as this mode if entered to perform a DO_LAND_START Landing sequence
         TURTLE =       28,  // Flip over after crash
+        MYFIRST =      99,   // Kaz Original Flight Mode
+        SBSBS =        100, //Kaz Original Flight Mode Step respons
 
         // Mode number 127 reserved for the "drone show mode" in the Skybrush
         // fork at https://github.com/skybrush-io/ardupilot
@@ -1467,6 +1469,78 @@ private:
 };
 
 
+class ModeMyfirst : public Mode {
+
+public:
+    // inherit constructor
+    using Mode::Mode;
+    Number mode_number() const override { return Number::MYFIRST; }
+
+    virtual void run() override;
+
+    bool requires_GPS() const override { return false; }
+    bool has_manual_throttle() const override { return true; }
+    bool allows_arming(AP_Arming::Method method) const override { return true; };
+    bool is_autopilot() const override { return false; }
+    bool allows_save_trim() const override { return true; }
+    bool allows_autotune() const override { return true; }
+    bool allows_flip() const override { return true; }
+
+protected:
+
+    const char *name() const override { return "MYFIRST"; }
+    const char *name4() const override { return "MYFI"; }
+
+private:
+
+};
+
+//ModeLoiterベースのオリジナルモード
+class ModeSbsbs : public Mode {
+
+public:
+    // inherit constructor
+    using Mode::Mode;
+    Number mode_number() const override { return Number::SBSBS; }
+
+    bool init(bool ignore_checks) override;
+    void run() override;
+
+    bool requires_GPS() const override { return true; }
+    bool has_manual_throttle() const override { return false; }
+    bool allows_arming(AP_Arming::Method method) const override { return true; };
+    bool is_autopilot() const override { return false; }
+    bool has_user_takeoff(bool must_navigate) const override { return true; }
+    bool allows_autotune() const override { return true; }
+
+#if PRECISION_LANDING == ENABLED
+    void set_precision_loiter_enabled(bool value) { _precision_loiter_enabled = value; }
+#endif
+
+protected:
+
+    const char *name() const override { return "SBSBS"; }
+    const char *name4() const override { return "SBSB"; }
+
+    uint32_t wp_distance() const override;
+    int32_t wp_bearing() const override;
+    float crosstrack_error() const override { return pos_control->crosstrack_error();}
+
+#if PRECISION_LANDING == ENABLED
+    bool do_precision_loiter();
+    void precision_loiter_xy();
+#endif
+
+private:
+
+#if PRECISION_LANDING == ENABLED
+    bool _precision_loiter_enabled;
+    bool _precision_loiter_active; // true if user has switched on prec loiter
+#endif
+
+};
+
+
 class ModeStabilize : public Mode {
 
 public:
@@ -1492,6 +1566,7 @@ protected:
 private:
 
 };
+
 
 #if FRAME_CONFIG == HELI_FRAME
 class ModeStabilize_Heli : public ModeStabilize {
