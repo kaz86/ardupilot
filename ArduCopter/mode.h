@@ -39,6 +39,8 @@ public:
         AUTOROTATE =   26,  // Autonomous autorotation
         AUTO_RTL =     27,  // Auto RTL, this is not a true mode, AUTO will report as this mode if entered to perform a DO_LAND_START Landing sequence
         TURTLE =       28,  // Flip over after crash
+        MYFIRST =      99,   // Kaz Original Flight Mode
+        SBSBS =        100, //Kaz Original Flight Mode Step respons
 
         // Mode number 127 reserved for the "drone show mode" in the Skybrush
         // fork at https://github.com/skybrush-io/ardupilot
@@ -121,6 +123,11 @@ public:
     // pause and resume a mode
     virtual bool pause() { return false; };
     virtual bool resume() { return false; };
+
+    // true if weathervaning is allowed in the current mode
+#if WEATHERVANE_ENABLED == ENABLED
+    virtual bool allows_weathervaning() const { return false; }
+#endif
 
 protected:
 
@@ -244,6 +251,7 @@ public:
             RATE =             7,  // turn at a specified rate (held in auto_yaw_rate)
             CIRCLE =           8,  // use AC_Circle's provided yaw (used during Loiter-Turns commands)
             PILOT_RATE =       9,  // target rate from pilot stick
+            WEATHERVANE =     10,  // yaw into wind
         };
 
         // mode(): current method of determining desired yaw:
@@ -267,6 +275,10 @@ public:
 
         bool reached_fixed_yaw_target();
 
+#if WEATHERVANE_ENABLED == ENABLED
+        void update_weathervane(const int16_t pilot_yaw_cds);
+#endif
+
         AC_AttitudeControl::HeadingCommand get_heading();
 
     private:
@@ -282,6 +294,7 @@ public:
 
         // auto flight mode's yaw mode
         Mode _mode = Mode::LOOK_AT_NEXT_WP;
+        Mode _last_mode;
 
         // Yaw will point at this location if mode is set to Mode::ROI
         Vector3f roi;
@@ -498,6 +511,11 @@ public:
     // Mission change detector
     AP_Mission_ChangeDetector mis_change_detector;
 
+    // true if weathervaning is allowed in auto
+#if WEATHERVANE_ENABLED == ENABLED
+    bool allows_weathervaning(void) const override;
+#endif
+
 protected:
 
     const char *name() const override { return auto_RTL? "AUTO RTL" : "AUTO"; }
@@ -514,6 +532,7 @@ private:
         AllowArming                        = (1 << 0U),
         AllowTakeOffWithoutRaisingThrottle = (1 << 1U),
         IgnorePilotYaw                     = (1 << 2U),
+        AllowWeatherVaning                 = (1 << 7U),
     };
 
     bool start_command(const AP_Mission::Mission_Command& cmd);
@@ -1030,6 +1049,11 @@ public:
     bool pause() override;
     bool resume() override;
 
+    // true if weathervaning is allowed in guided
+#if WEATHERVANE_ENABLED == ENABLED
+    bool allows_weathervaning(void) const override;
+#endif
+
 protected:
 
     const char *name() const override { return "GUIDED"; }
@@ -1050,6 +1074,7 @@ private:
         DoNotStabilizePositionXY = (1U << 4),
         DoNotStabilizeVelocityXY = (1U << 5),
         WPNavUsedForPosControl = (1U << 6),
+        AllowWeatherVaning = (1U << 7)
     };
 
     // wp controller
@@ -1467,6 +1492,78 @@ private:
 };
 
 
+class ModeMyfirst : public Mode {
+
+public:
+    // inherit constructor
+    using Mode::Mode;
+    Number mode_number() const override { return Number::MYFIRST; }
+
+    virtual void run() override;
+
+    bool requires_GPS() const override { return false; }
+    bool has_manual_throttle() const override { return true; }
+    bool allows_arming(AP_Arming::Method method) const override { return true; };
+    bool is_autopilot() const override { return false; }
+    bool allows_save_trim() const override { return true; }
+    bool allows_autotune() const override { return true; }
+    bool allows_flip() const override { return true; }
+
+protected:
+
+    const char *name() const override { return "MYFIRST"; }
+    const char *name4() const override { return "MYFI"; }
+
+private:
+
+};
+
+//ModeLoiterベースのオリジナルモード
+class ModeSbsbs : public Mode {
+
+public:
+    // inherit constructor
+    using Mode::Mode;
+    Number mode_number() const override { return Number::SBSBS; }
+
+    bool init(bool ignore_checks) override;
+    void run() override;
+
+    bool requires_GPS() const override { return true; }
+    bool has_manual_throttle() const override { return false; }
+    bool allows_arming(AP_Arming::Method method) const override { return true; };
+    bool is_autopilot() const override { return false; }
+    bool has_user_takeoff(bool must_navigate) const override { return true; }
+    bool allows_autotune() const override { return true; }
+
+#if PRECISION_LANDING == ENABLED
+    void set_precision_loiter_enabled(bool value) { _precision_loiter_enabled = value; }
+#endif
+
+protected:
+
+    const char *name() const override { return "SBSBS"; }
+    const char *name4() const override { return "SBSB"; }
+
+    uint32_t wp_distance() const override;
+    int32_t wp_bearing() const override;
+    float crosstrack_error() const override { return pos_control->crosstrack_error();}
+
+#if PRECISION_LANDING == ENABLED
+    bool do_precision_loiter();
+    void precision_loiter_xy();
+#endif
+
+private:
+
+#if PRECISION_LANDING == ENABLED
+    bool _precision_loiter_enabled;
+    bool _precision_loiter_active; // true if user has switched on prec loiter
+#endif
+
+};
+
+
 class ModeStabilize : public Mode {
 
 public:
@@ -1492,6 +1589,7 @@ protected:
 private:
 
 };
+
 
 #if FRAME_CONFIG == HELI_FRAME
 class ModeStabilize_Heli : public ModeStabilize {

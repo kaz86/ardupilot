@@ -259,7 +259,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @Param: FLTMODE1
     // @DisplayName: Flight Mode 1
     // @Description: Flight mode when pwm of Flightmode channel(FLTMODE_CH) is <= 1230
-    // @Values: 0:Stabilize,1:Acro,2:AltHold,3:Auto,4:Guided,5:Loiter,6:RTL,7:Circle,9:Land,11:Drift,13:Sport,14:Flip,15:AutoTune,16:PosHold,17:Brake,18:Throw,19:Avoid_ADSB,20:Guided_NoGPS,21:Smart_RTL,22:FlowHold,23:Follow,24:ZigZag,25:SystemID,26:Heli_Autorotate,27:Auto RTL
+    // @Values: 0:Stabilize,1:Acro,2:AltHold,3:Auto,4:Guided,5:Loiter,6:RTL,7:Circle,9:Land,11:Drift,13:Sport,14:Flip,15:AutoTune,16:PosHold,17:Brake,18:Throw,19:Avoid_ADSB,20:Guided_NoGPS,21:Smart_RTL,22:FlowHold,23:Follow,24:ZigZag,25:SystemID,26:Heli_Autorotate,27:Auto RTL,99:Myfirst,100:Sbsbs
     // @User: Standard
     GSCALAR(flight_mode1, "FLTMODE1",               (uint8_t)FLIGHT_MODE_1),
 
@@ -472,7 +472,7 @@ const AP_Param::Info Copter::var_info[] = {
     GOBJECT(parachute, "CHUTE_", AP_Parachute),
 #endif
 
-#if LANDING_GEAR_ENABLED == ENABLED
+#if AP_LANDINGGEAR_ENABLED
     // @Group: LGR_
     // @Path: ../libraries/AP_LandingGear/AP_LandingGear.cpp
     GOBJECT(landinggear,    "LGR_", AP_LandingGear),
@@ -983,7 +983,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Param: AUTO_OPTIONS
     // @DisplayName: Auto mode options
     // @Description: A range of options that can be applied to change auto mode behaviour. Allow Arming allows the copter to be armed in Auto. Allow Takeoff Without Raising Throttle allows takeoff without the pilot having to raise the throttle. Ignore pilot yaw overrides the pilot's yaw stick being used while in auto.
-    // @Bitmask: 0:Allow Arming,1:Allow Takeoff Without Raising Throttle,2:Ignore pilot yaw
+    // @Bitmask: 0:Allow Arming,1:Allow Takeoff Without Raising Throttle,2:Ignore pilot yaw,7:Allow weathervaning
     // @User: Advanced
     AP_GROUPINFO("AUTO_OPTIONS", 40, ParametersG2, auto_options, 0),
 #endif
@@ -992,7 +992,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Param: GUID_OPTIONS
     // @DisplayName: Guided mode options
     // @Description: Options that can be applied to change guided mode behaviour
-    // @Bitmask: 0:Allow Arming from Transmitter,2:Ignore pilot yaw,3:SetAttitudeTarget interprets Thrust As Thrust,4:Do not stabilize PositionXY,5:Do not stabilize VelocityXY,6:Waypoint navigation used for position targets
+    // @Bitmask: 0:Allow Arming from Transmitter,2:Ignore pilot yaw,3:SetAttitudeTarget interprets Thrust As Thrust,4:Do not stabilize PositionXY,5:Do not stabilize VelocityXY,6:Waypoint navigation used for position targets,7:Allow weathervaning
     // @User: Advanced
     AP_GROUPINFO("GUID_OPTIONS", 41, ParametersG2, guided_options, 0),
 #endif
@@ -1160,6 +1160,14 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_GROUPINFO("TKOFF_RPM_MIN", 58, ParametersG2, takeoff_rpm_min, 0),
 #endif
 
+#if WEATHERVANE_ENABLED == ENABLED
+    // @Group: WVANE_
+    // @Path: ../libraries/AC_AttitudeControl/AC_WeatherVane.cpp
+    AP_SUBGROUPINFO(weathervane, "WVANE_", 59, ParametersG2, AC_WeatherVane),
+#endif
+
+    // ID 60 is reserved for the SHIP_OPS
+
     // ID 62 is reserved for the SHOW_... parameters from the Skybrush fork at
     // https://github.com/skybrush-io/ardupilot
 
@@ -1217,6 +1225,10 @@ ParametersG2::ParametersG2(void)
 #endif
 
     ,command_model_pilot(PILOT_Y_RATE_DEFAULT, PILOT_Y_EXPO_DEFAULT, 0.0f)
+
+#if WEATHERVANE_ENABLED == ENABLED
+    ,weathervane()
+#endif
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
@@ -1290,7 +1302,7 @@ void Copter::load_parameters(void)
     AP_Param::load_all();
     AP_Param::convert_old_parameters(&conversion_table[0], ARRAY_SIZE(conversion_table));
 
-#if LANDING_GEAR_ENABLED == ENABLED
+#if AP_LANDINGGEAR_ENABLED
     // convert landing gear parameters
     // PARAMETER_CONVERSION - Added: Nov-2018
     convert_lgr_parameters();
@@ -1557,7 +1569,7 @@ void Copter::convert_prx_parameters()
 }
 #endif
 
-#if LANDING_GEAR_ENABLED == ENABLED
+#if AP_LANDINGGEAR_ENABLED
 /*
   convert landing gear parameters
  */

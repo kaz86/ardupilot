@@ -37,6 +37,10 @@ Mode *Copter::mode_from_mode_num(const Mode::Number mode)
             break;
 #endif
 
+        case Mode::Number::MYFIRST:
+            ret = &mode_myfirst;
+            break;
+
         case Mode::Number::STABILIZE:
             ret = &mode_stabilize;
             break;
@@ -58,9 +62,14 @@ Mode *Copter::mode_from_mode_num(const Mode::Number mode)
 #endif
 
 #if MODE_LOITER_ENABLED == ENABLED
+        case Mode::Number::SBSBS:
+            ret = &mode_sbsbs;
+            break;
+
         case Mode::Number::LOITER:
             ret = &mode_loiter;
             break;
+            
 #endif
 
 #if MODE_GUIDED_ENABLED == ENABLED

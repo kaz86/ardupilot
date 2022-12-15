@@ -51,6 +51,7 @@
 #include <AP_OpenDroneID/AP_OpenDroneID.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
+#include <AP_Scheduler/AP_Scheduler.h>
 
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS
   #include <AP_CANManager/AP_CANManager.h>
@@ -548,12 +549,12 @@ bool AP_Arming::gps_checks(bool report)
     if ((checks_to_perform & ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_GPS)) {
 
         // Any failure messages from GPS backends
-            char failure_msg[50] = {};
-            if (!AP::gps().backends_healthy(failure_msg, ARRAY_SIZE(failure_msg))) {
-                if (failure_msg[0] != '\0') {
-                    check_failed(ARMING_CHECK_GPS, report, "%s", failure_msg);
-                }
-                return false;
+        char failure_msg[50] = {};
+        if (!AP::gps().backends_healthy(failure_msg, ARRAY_SIZE(failure_msg))) {
+            if (failure_msg[0] != '\0') {
+                check_failed(ARMING_CHECK_GPS, report, "%s", failure_msg);
+            }
+            return false;
         }
 
         for (uint8_t i = 0; i < gps.num_sensors(); i++) {
@@ -584,7 +585,7 @@ bool AP_Arming::gps_checks(bool report)
         }
 
         if (!AP::ahrs().home_is_set()) {
-            check_failed(ARMING_CHECK_GPS, report, "GPS: waiting for home");
+            check_failed(ARMING_CHECK_GPS, report, "AHRS: waiting for home");
             return false;
         }
 
@@ -601,13 +602,15 @@ bool AP_Arming::gps_checks(bool report)
         }
 
         // check AHRS and GPS are within 10m of each other
-        const Location gps_loc = gps.location();
-        Location ahrs_loc;
-        if (AP::ahrs().get_location(ahrs_loc)) {
-            const float distance = gps_loc.get_distance(ahrs_loc);
-            if (distance > AP_ARMING_AHRS_GPS_ERROR_MAX) {
-                check_failed(ARMING_CHECK_GPS, report, "GPS and AHRS differ by %4.1fm", (double)distance);
-                return false;
+        if (gps.num_sensors() > 0) {
+            const Location gps_loc = gps.location();
+            Location ahrs_loc;
+            if (AP::ahrs().get_location(ahrs_loc)) {
+                const float distance = gps_loc.get_distance(ahrs_loc);
+                if (distance > AP_ARMING_AHRS_GPS_ERROR_MAX) {
+                    check_failed(ARMING_CHECK_GPS, report, "GPS and AHRS differ by %4.1fm", (double)distance);
+                    return false;
+                }
             }
         }
     }
@@ -966,6 +969,16 @@ bool AP_Arming::system_checks(bool report)
             check_failed(ARMING_CHECK_SYSTEM, report, "Param storage failed");
             return false;
         }
+
+        // check main loop rate is at least 90% of expected value
+        const float actual_loop_rate = AP::scheduler().get_filtered_loop_rate_hz();
+        const uint16_t expected_loop_rate = AP::scheduler().get_loop_rate_hz();
+        const float loop_rate_pct =  actual_loop_rate / expected_loop_rate;
+        if (loop_rate_pct < 0.90) {
+            check_failed(ARMING_CHECK_SYSTEM, report, "Main loop slow (%uHz < %uHz)", (unsigned)actual_loop_rate, (unsigned)expected_loop_rate);
+            return false;
+        }
+
 #if AP_TERRAIN_AVAILABLE
         const AP_Terrain *terrain = AP_Terrain::get_singleton();
         if ((terrain != nullptr) && terrain->init_failed()) {
