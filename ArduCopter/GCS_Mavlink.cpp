@@ -577,6 +577,7 @@ bool GCS_MAVLINK_Copter::handle_guided_request(AP_Mission::Mission_Command &cmd)
 void GCS_MAVLINK_Copter::packetReceived(const mavlink_status_t &status,
                                         const mavlink_message_t &msg)
 {
+    // we handle these messages here to avoid them being blocked by mavlink routing code
 #if HAL_ADSB_ENABLED
     if (copter.g2.dev_options.get() & DevOptionADSBMAVLink) {
         // optional handling of GLOBAL_POSITION_INT as a MAVLink based avoidance source
@@ -919,7 +920,7 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
         return MAV_RESULT_FAILED;
 #endif
 
-#if LANDING_GEAR_ENABLED == ENABLED
+#if AP_LANDINGGEAR_ENABLED
         case MAV_CMD_AIRFRAME_CONFIGURATION: {
             // Param 1: Select which gear, not used in ArduPilot
             // Param 2: 0 = Deploy, 1 = Retract

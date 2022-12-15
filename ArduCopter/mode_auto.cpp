@@ -199,6 +199,13 @@ bool ModeAuto::allows_arming(AP_Arming::Method method) const
     return ((copter.g2.auto_options & (uint32_t)Options::AllowArming) != 0) && !auto_RTL;
 };
 
+#if WEATHERVANE_ENABLED == ENABLED
+bool ModeAuto::allows_weathervaning() const
+{
+    return (copter.g2.auto_options & (uint32_t)Options::AllowWeatherVaning) != 0;
+}
+#endif
+
 // Go straight to landing sequence via DO_LAND_START, if succeeds pretend to be Auto RTL mode
 bool ModeAuto::jump_to_landing_sequence_auto_RTL(ModeReason reason)
 {
@@ -405,7 +412,7 @@ void ModeAuto::land_start()
     // initialise yaw
     auto_yaw.set_mode(AutoYaw::Mode::HOLD);
 
-#if LANDING_GEAR_ENABLED == ENABLED
+#if AP_LANDINGGEAR_ENABLED
     // optionally deploy landing gear
     copter.landinggear.deploy_for_landing();
 #endif
@@ -1785,7 +1792,7 @@ void ModeAuto::do_RTL(void)
 // verify_takeoff - check if we have completed the takeoff
 bool ModeAuto::verify_takeoff()
 {
-#if LANDING_GEAR_ENABLED == ENABLED
+#if AP_LANDINGGEAR_ENABLED
     // if we have reached our destination
     if (auto_takeoff_complete) {
         // retract the landing gear

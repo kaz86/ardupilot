@@ -247,6 +247,8 @@ const AP_Param::GroupInfo SIM::var_info3[] = {
     AP_SUBGROUPINFO(baro[2], "BAR3_", 36, SIM, SIM::BaroParm),
 #endif
 
+    AP_GROUPINFO("TIME_JITTER",  37, SIM,  loop_time_jitter_us, 0),
+
     // user settable parameters for the 1st barometer
     // @Param: BARO_RND
     // @DisplayName: Baro Noise
@@ -317,6 +319,8 @@ const AP_Param::GroupInfo SIM::BaroParm::var_info[] = {
     AP_GROUPINFO("WCF_BAK", 8,  SIM::BaroParm, wcof_xn, 0.0),
     AP_GROUPINFO("WCF_RGT", 9,  SIM::BaroParm, wcof_yp, 0.0),
     AP_GROUPINFO("WCF_LFT", 10, SIM::BaroParm, wcof_yn, 0.0),
+    AP_GROUPINFO("WCF_UP",  11, SIM::BaroParm, wcof_zp, 0.0),
+    AP_GROUPINFO("WCF_DN",  12, SIM::BaroParm, wcof_zn, 0.0),
     AP_GROUPEND
 };
 

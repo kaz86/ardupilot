@@ -124,6 +124,11 @@ public:
     virtual bool pause() { return false; };
     virtual bool resume() { return false; };
 
+    // true if weathervaning is allowed in the current mode
+#if WEATHERVANE_ENABLED == ENABLED
+    virtual bool allows_weathervaning() const { return false; }
+#endif
+
 protected:
 
     // helper functions
@@ -246,6 +251,7 @@ public:
             RATE =             7,  // turn at a specified rate (held in auto_yaw_rate)
             CIRCLE =           8,  // use AC_Circle's provided yaw (used during Loiter-Turns commands)
             PILOT_RATE =       9,  // target rate from pilot stick
+            WEATHERVANE =     10,  // yaw into wind
         };
 
         // mode(): current method of determining desired yaw:
@@ -269,6 +275,10 @@ public:
 
         bool reached_fixed_yaw_target();
 
+#if WEATHERVANE_ENABLED == ENABLED
+        void update_weathervane(const int16_t pilot_yaw_cds);
+#endif
+
         AC_AttitudeControl::HeadingCommand get_heading();
 
     private:
@@ -284,6 +294,7 @@ public:
 
         // auto flight mode's yaw mode
         Mode _mode = Mode::LOOK_AT_NEXT_WP;
+        Mode _last_mode;
 
         // Yaw will point at this location if mode is set to Mode::ROI
         Vector3f roi;
@@ -500,6 +511,11 @@ public:
     // Mission change detector
     AP_Mission_ChangeDetector mis_change_detector;
 
+    // true if weathervaning is allowed in auto
+#if WEATHERVANE_ENABLED == ENABLED
+    bool allows_weathervaning(void) const override;
+#endif
+
 protected:
 
     const char *name() const override { return auto_RTL? "AUTO RTL" : "AUTO"; }
@@ -516,6 +532,7 @@ private:
         AllowArming                        = (1 << 0U),
         AllowTakeOffWithoutRaisingThrottle = (1 << 1U),
         IgnorePilotYaw                     = (1 << 2U),
+        AllowWeatherVaning                 = (1 << 7U),
     };
 
     bool start_command(const AP_Mission::Mission_Command& cmd);
@@ -1032,6 +1049,11 @@ public:
     bool pause() override;
     bool resume() override;
 
+    // true if weathervaning is allowed in guided
+#if WEATHERVANE_ENABLED == ENABLED
+    bool allows_weathervaning(void) const override;
+#endif
+
 protected:
 
     const char *name() const override { return "GUIDED"; }
@@ -1052,6 +1074,7 @@ private:
         DoNotStabilizePositionXY = (1U << 4),
         DoNotStabilizeVelocityXY = (1U << 5),
         WPNavUsedForPosControl = (1U << 6),
+        AllowWeatherVaning = (1U << 7)
     };
 
     // wp controller

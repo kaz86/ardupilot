@@ -69,6 +69,7 @@
 #include <AC_Sprayer/AC_Sprayer.h>          // Crop sprayer library
 #include <AP_ADSB/AP_ADSB.h>                // ADS-B RF based collision avoidance module library
 #include <AP_Proximity/AP_Proximity.h>      // ArduPilot proximity sensor library
+#include <AP_OpticalFlow/AP_OpticalFlow.h>
 
 // Configuration
 #include "defines.h"
@@ -123,7 +124,6 @@
 #if AP_TERRAIN_AVAILABLE
  # include <AP_Terrain/AP_Terrain.h>
 #endif
- # include <AP_OpticalFlow/AP_OpticalFlow.h>
 #if RANGEFINDER_ENABLED == ENABLED
  # include <AP_RangeFinder/AP_RangeFinder.h>
 #endif
@@ -518,7 +518,7 @@ private:
 #endif
 
     // Landing Gear Controller
-#if LANDING_GEAR_ENABLED == ENABLED
+#if AP_LANDINGGEAR_ENABLED
     AP_LandingGear landinggear;
 #endif
 
@@ -696,7 +696,7 @@ private:
     void set_accel_throttle_I_from_pilot_throttle();
     void rotate_body_frame_to_NE(float &x, float &y);
     uint16_t get_pilot_speed_dn() const;
-    void run_rate_controller() { attitude_control->rate_controller_run(); }
+    void run_rate_controller();
 
 #if AC_CUSTOMCONTROL_MULTI_ENABLED == ENABLED
     void run_custom_controller() { custom_control.update(); }
@@ -806,7 +806,7 @@ private:
     void set_land_complete_maybe(bool b);
     void update_throttle_mix();
 
-#if LANDING_GEAR_ENABLED == ENABLED
+#if AP_LANDINGGEAR_ENABLED
     // landing_gear.cpp
     void landinggear_update();
 #endif
