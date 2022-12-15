@@ -106,7 +106,7 @@ void ModeSbsbs::run()
     }else if(now_time >= action_time){
         target_euler_deg = 0.0f;
     }else if(action_time > now_time){
-        target_euler_deg = -1500.0f;
+        target_euler_deg = 9000.0f;
     }
 
     now_time = now_time + 0.0025f;
